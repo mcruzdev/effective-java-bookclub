@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Effective Java — Book Club</title>
+<style>
+  :root{
+    --bg: #171b21;
+    --ink: #ecebe4;
+    --ink-dim: #9aa1ac;
+    --ink-faint: #6b7280;
+    --accent: #d9a441;
+    --accent-soft: #e7c17a;
+    --rule: rgba(236,235,228,.13);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    background: var(--bg); color: var(--ink);
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding: 2.5rem 1.5rem;
+  }
+  main{ max-width: 40rem; width:100%; }
+  .kicker{
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing:.16em; text-transform:uppercase;
+    color: var(--ink-dim); font-size:.75rem; margin-bottom:.8rem;
+  }
+  h1{ font-size: 1.9rem; margin: 0 0 .5rem 0; }
+  p.lede{ color: var(--ink-dim); margin: 0 0 2rem 0; max-width: 34em; }
+  ul{ list-style:none; margin:0; padding:0; border-top:1px solid var(--rule); }
+  li{ border-bottom: 1px solid var(--rule); }
+  a{
+    display:flex; align-items:baseline; justify-content:space-between; gap:1rem;
+    padding: 1.1rem .2rem; color: var(--ink); text-decoration:none;
+  }
+  a:hover .name{ color: var(--accent-soft); }
+  .name{ font-weight:600; }
+  .desc{ color: var(--ink-faint); font-size:.85rem; text-align:right; }
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">Book Club · Effective Java</div>
+  <h1>Slides das sessões</h1>
+  <p class="lede">Apresentações usadas nos encontros do book club, uma por item do livro.</p>
+  <ul>
+    <li>
+      <a href="./item10-equals-contract/">
+        <span class="name">Item 10 — O contrato de equals()</span>
+        <span class="desc">reflexidade · simetria · transitividade</span>
+      </a>
+    </li>
+  </ul>
+</main>
+</body>
+</html>
