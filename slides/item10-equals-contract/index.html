@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Item 10 — O Contrato de equals()</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="./vendor/reset.css">
+<link rel="stylesheet" href="./vendor/reveal.css">
+
+<style>
+  /* ============================================================
+     THEME — "Exhibit A": a spec/contract document read aloud.
+     Palette: charcoal-ink ground, warm-gold seal, git-diff
+     green/coral reserved strictly for contract pass/fail.
+     ============================================================ */
+  :root{
+    --bg:            #171b21;
+    --bg-raised:     #1e242c;
+    --bg-inset:      #12151a;
+    --ink:           #ecebe4;
+    --ink-dim:       #9aa1ac;
+    --ink-faint:     #6b7280;
+    --accent:        #d9a441;
+    --accent-soft:   #e7c17a;
+    --accent-dim:    #8a6a2c;
+    --good:          #7fb069;
+    --good-bg:       rgba(127,176,105,.13);
+    --bad:           #d9695f;
+    --bad-bg:        rgba(217,105,95,.13);
+    --rule:          rgba(236,235,228,.13);
+    --rule-strong:   rgba(236,235,228,.24);
+
+    --r-background-color: var(--bg);
+    --r-main-font: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --r-main-color: var(--ink);
+    --r-main-font-size: 30px;
+    --r-block-margin: 18px;
+    --r-heading-margin: 0 0 .4em 0;
+    --r-heading-font: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --r-heading-color: var(--ink);
+    --r-heading-line-height: 1.18;
+    --r-heading-letter-spacing: normal;
+    --r-heading-text-transform: none;
+    --r-heading-text-shadow: none;
+    --r-heading-font-weight: 600;
+    --r-heading1-size: 1.9em;
+    --r-heading2-size: 1.5em;
+    --r-heading3-size: 1.05em;
+    --r-heading4-size: .9em;
+    --r-code-font: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --r-link-color: var(--accent-soft);
+    --r-link-color-dark: var(--accent-dim);
+    --r-link-color-hover: var(--accent);
+    --r-selection-background-color: rgba(217,164,65,.35);
+    --r-selection-color: var(--ink);
+  }
+
+  html, body { background: var(--bg); }
+  .reveal-viewport{ background: var(--bg); }
+  .reveal{ font-family: var(--r-main-font); font-size: var(--r-main-font-size); color: var(--r-main-color); }
+  .reveal ::selection{ color: var(--r-selection-color); background: var(--r-selection-background-color); text-shadow:none; }
+
+  .reveal .slides section,
+  .reveal .slides section > section{ line-height:1.3; font-weight:inherit; text-align:left; }
+
+  .reveal h1, .reveal h2, .reveal h3, .reveal h4{
+    margin: var(--r-heading-margin);
+    color: var(--r-heading-color);
+    font-family: var(--r-heading-font);
+    font-weight: var(--r-heading-font-weight);
+    line-height: var(--r-heading-line-height);
+    text-transform: var(--r-heading-text-transform);
+    text-shadow: none;
+    text-wrap: balance;
+  }
+  .reveal h1{ font-size: var(--r-heading1-size); }
+  .reveal h2{ font-size: var(--r-heading2-size); }
+  .reveal h3{ font-size: var(--r-heading3-size); }
+  .reveal p { margin: var(--r-block-margin) 0; line-height:1.5; }
+  .reveal ul, .reveal ol{ display:block; margin: .6em 0 .6em 0; }
+  .reveal li{ margin: .4em 0; }
+  .reveal a{ color: var(--r-link-color); text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+  .reveal a:hover{ color: var(--r-link-color-hover); }
+  .reveal strong{ color: var(--ink); font-weight:600; }
+  .reveal em{ font-style: italic; color: var(--accent-soft); }
+  .reveal code{ font-family: var(--r-code-font); }
+  .reveal .controls{ color: var(--accent); }
+  .reveal .progress{ color: var(--accent); background: rgba(255,255,255,.08); height: 4px; }
+  .reveal .slide-number{
+    font-family: var(--r-code-font); font-variant-numeric: tabular-nums;
+    background: transparent; color: var(--ink-faint); font-size: 15px;
+  }
+
+  /* ---------- shared page furniture ---------- */
+  .page{ display:flex; flex-direction:column; height:100%; padding: 0 .3em; }
+  .eyebrow{
+    font-family: var(--r-code-font);
+    font-size: .40em;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display:flex; align-items:center; gap: .6em;
+    margin-bottom: .5em;
+  }
+  .eyebrow::before{
+    content:"§"; display:inline-block; font-family:"IBM Plex Serif",serif;
+    font-size:1.3em; color:var(--accent); line-height:1;
+  }
+  .rule{ border:none; border-top:1px solid var(--rule); margin: .6em 0 1em 0; }
+  .lede{ color: var(--ink-dim); font-size: .78em; max-width: 34em; }
+  .cite{ color: var(--ink-faint); font-size:.6em; font-family: var(--r-code-font); }
+
+  /* ---------- title slide ---------- */
+  .title-slide{ text-align:left; }
+  .title-slide .kicker{
+    font-family: var(--r-code-font); letter-spacing:.16em; text-transform:uppercase;
+    color: var(--ink-dim); font-size:.5em; margin-bottom: .8em;
+  }
+  .title-slide h1{ font-size: 2.3em; max-width: 11em; }
+  .title-slide .seal{
+    display:inline-flex; align-items:center; gap:.5em;
+    margin-top: 1.1em; font-family: var(--r-code-font); font-size:.5em;
+    color: var(--ink-dim); border-top:1px solid var(--rule); padding-top: .9em;
+  }
+  .title-slide .seal b{ color: var(--accent-soft); font-weight:600; }
+
+  /* ---------- opening statement (hook) ---------- */
+  .statement{ display:flex; flex-direction:column; justify-content:center; height:100%; }
+  .statement .mark{ font-family:"IBM Plex Serif",serif; font-size:3em; color:var(--accent); line-height:.5; margin-bottom:.2em; }
+  .statement h1{
+    font-size: 1.55em; font-style: italic; font-weight:500;
+    max-width: 13.5em; color: var(--ink);
+  }
+  .statement h1 em{ font-style: italic; color: var(--accent-soft); font-weight:600; }
+
+  /* ---------- clause / exemption lists (numbered, contract-style) ---------- */
+  .clauses{ list-style:none; margin: .4em 0 0 0; padding:0; counter-reset: clause; }
+  .clauses > li{
+    counter-increment: clause;
+    display:grid; grid-template-columns: 2.1em 1fr; gap: .5em;
+    padding: .55em 0; border-bottom: 1px solid var(--rule);
+    font-size: .74em;
+  }
+  .clauses > li:first-child{ border-top: 1px solid var(--rule); }
+  .clauses > li::before{
+    content: "§" counter(clause);
+    font-family: var(--r-code-font); color: var(--accent);
+    font-size: .95em; padding-top:.1em;
+  }
+  .clauses .head{ color: var(--ink); font-weight:600; display:block; margin-bottom:.15em; }
+  .clauses .sub{ color: var(--ink-dim); font-size:.92em; }
+
+  .exemptions{ list-style:none; margin:.4em 0 0 0; padding:0; counter-reset: ex; }
+  .exemptions > li{
+    counter-increment: ex;
+    display:grid; grid-template-columns: 2.1em 1fr; gap:.5em;
+    padding: .5em 0; font-size:.72em; align-items:baseline;
+  }
+  .exemptions > li::before{
+    content: counter(ex) ".";
+    font-family: var(--r-code-font); color: var(--ink-faint);
+  }
+  .exemptions .note{
+    display:block; margin-top:.35em; color: var(--ink-faint);
+    font-size:.88em; line-height:1.4;
+  }
+  .exemptions .note .tag{
+    font-family: var(--r-code-font); text-transform:uppercase; letter-spacing:.06em;
+    color: var(--accent); font-size:.9em; margin-right:.4em;
+  }
+
+  /* ---------- violation list (the three problems) ---------- */
+  .problems{ list-style:none; margin:.5em 0 0 0; padding:0; }
+  .problems > li{
+    display:grid; grid-template-columns: 1.5em 1fr; gap:.6em;
+    padding: .55em 0; border-bottom: 1px solid var(--rule); font-size:.76em;
+    align-items:baseline;
+  }
+  .problems > li:first-child{ border-top: 1px solid var(--rule); }
+  .problems > li::before{
+    content:"✕"; color: var(--bad); font-family: var(--r-code-font); font-weight:600;
+  }
+
+  /* ---------- code exhibits ---------- */
+  .exhibit{
+    position:relative; background: var(--bg-inset);
+    border:1px solid var(--rule); border-radius:5px;
+    padding: 1.1em 1.3em; margin: .5em 0;
+  }
+  .exhibit-label{
+    font-family: var(--r-code-font); font-size:.4em; letter-spacing:.08em;
+    color: var(--ink-faint); text-transform:uppercase; margin-bottom:.5em;
+    display:flex; justify-content:space-between; gap:1em;
+  }
+  .exhibit pre{ margin:0; width:100%; box-shadow:none; }
+  .exhibit pre code{
+    display:block; padding:0; background:transparent; max-height:none;
+    font-size: .56em; line-height:1.55; font-family: var(--r-code-font);
+    white-space:pre; overflow-x:auto;
+  }
+
+  .stamp{
+    position:absolute; top:-.7em; right:1.1em;
+    font-family: var(--r-code-font); font-weight:600;
+    font-size: .42em; letter-spacing:.09em; text-transform:uppercase;
+    padding: .35em .7em; border-radius:3px;
+    transform: rotate(-3deg);
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    border: 1.5px solid currentColor;
+  }
+  .stamp.good{ color: var(--good); background: var(--good-bg); }
+  .stamp.bad{ color: var(--bad); background: var(--bad-bg); }
+
+  /* ---------- two-up comparisons ---------- */
+  .compare{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.3em; margin-top:.3em; }
+  .compare .exhibit{ margin:.7em 0 0 0; }
+  .compare h4{ font-size:.62em; color:var(--ink-dim); font-weight:600; margin:0 0 .1em 0; font-family: var(--r-main-font); }
+
+  /* ---------- syntax highlight tokens ---------- */
+  .tok-kw{ color: var(--accent-soft); }
+  .tok-type{ color: #8fb3c9; }
+  .tok-str{ color: var(--good); }
+  .tok-com{ color: var(--ink-faint); font-style: italic; }
+  .tok-anno{ color: var(--bad); }
+  .tok-num{ color: var(--accent-soft); }
+
+  /* ---------- misc components ---------- */
+  .trace{
+    font-family: var(--r-code-font); font-size:.62em; background: var(--bg-raised);
+    border-left: 3px solid var(--accent); border-radius: 0 4px 4px 0;
+    padding: .8em 1.1em; margin: .6em 0; color: var(--ink-dim);
+  }
+  .trace .ok{ color: var(--good); }
+  .trace .no{ color: var(--bad); }
+  .trace div{ padding: .12em 0; }
+
+  table.recap{ width:100%; border-collapse:collapse; font-size:.62em; margin-top:.4em; }
+  table.recap th{
+    text-align:left; font-family: var(--r-code-font); text-transform:uppercase;
+    letter-spacing:.06em; color: var(--ink-faint); font-weight:500;
+    border-bottom: 1px solid var(--rule-strong); padding: .4em .6em;
+  }
+  table.recap td{ padding: .55em .6em; border-bottom: 1px solid var(--rule); vertical-align:top; }
+  table.recap td.n{ color: var(--accent); font-family: var(--r-code-font); }
+  table.recap tr:last-child td{ border-bottom:none; }
+
+  .badge{
+    display:inline-block; font-family: var(--r-code-font); font-size:.85em;
+    padding: .1em .5em; border-radius:3px; border:1px solid currentColor;
+  }
+  .badge.good{ color: var(--good); }
+  .badge.bad{ color: var(--bad); }
+
+  /* ---------- value-object examples ---------- */
+  .vo-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: .9em; margin-top:.6em; }
+  .vo-card{
+    background: var(--bg-raised); border:1px solid var(--rule);
+    border-radius:5px; padding: .8em 1em;
+  }
+  .vo-card .k{ font-family: var(--r-code-font); font-size:.5em; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-soft); }
+  .vo-card .v{ font-size:.66em; color:var(--ink-dim); margin-top:.3em; }
+
+  /* ---------- handoff card (consistência) ---------- */
+  .handoff{
+    margin-top: .6em; border: 1.5px dashed var(--rule-strong); border-radius:8px;
+    padding: 1.6em 1.8em; display:flex; flex-direction:column; gap:.3em;
+    max-width: 26em;
+  }
+  .handoff .tag{ font-family: var(--r-code-font); font-size:.42em; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); }
+  .handoff p{ margin:0; font-size:.78em; color: var(--ink-dim); }
+  .handoff .who{ color: var(--accent-soft); font-family: var(--r-code-font); font-weight:600; }
+
+  /* ---------- demo marker slide ---------- */
+  .demo-box{
+    background: var(--bg-inset); border:1px solid var(--rule); border-radius:6px;
+    padding: 1em 1.3em; margin-top:.6em; font-family: var(--r-code-font);
+    font-size:.6em; line-height:1.9; color: var(--ink-dim);
+    white-space: pre; overflow-x:auto;
+  }
+  .demo-box .path{ color: var(--accent-soft); }
+  .demo-box .file{ color: var(--ink); }
+
+  .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.6em; align-items:start; }
+
+  .closing{ text-align:left; }
+  .closing h1{ font-size: 1.9em; }
+  .closing .next{
+    margin-top: 1.4em; padding-top: 1em; border-top: 1px solid var(--rule);
+    font-family: var(--r-code-font); font-size: .5em; color: var(--ink-dim);
+  }
+  .closing .next b{ color: var(--accent-soft); }
+
+  @media (prefers-reduced-motion: reduce){
+    .reveal .slides section{ transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- 1 — CAPA -->
+    <section>
+      <div class="page title-slide">
+        <div class="kicker">Effective Java · Capítulo 3 · Métodos comuns a todos os objetos</div>
+        <h1>Item 10 — O contrato de <code>equals()</code></h1>
+        <p class="lede">Sobrescrever <code>equals</code> é assinar um contrato com todo código que já confia em <code>Object</code> — <code>HashMap</code>, <code>HashSet</code>, <code>List</code>. Quebrar uma cláusula não gera erro de compilação: gera bugs silenciosos em produção.</p>
+        <div class="seal">Book Club de Effective Java · <b>item10</b></div>
+      </div>
+    </section>
+
+    <!-- 2 — ABERTURA (hook) -->
+    <section>
+      <div class="page statement">
+        <div class="mark">“</div>
+          <h1>A forma mais fácil de se evitar problemas é não sobrescrever o método <code>equals</code>.</h1>
+      </div>
+    </section>
+
+    <!-- 3 — QUANDO NÃO SOBRESCREVER -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Antes de tudo</div>
+        <h2>Quando não sobrescrever <code>equals</code></h2>
+        <ol class="exemptions">
+          <li><span><strong>Cada instância da classe é inerentemente exclusiva.</strong><span class="note"><span class="tag">Exemplo</span><code>Thread</code> representa uma identidade ativa, não uma identidade de valor.</span></span></li>
+          <li><span>Não há necessidade de a classe estipular um teste de <strong>igualdade lógica</strong>.<span class="note"><span class="tag">Exemplo</span><code>java.util.regex.Pattern</code> — o autor diz que essa classe poderia ter sobrescrito <code>equals</code>, mas foi desenhada para não fazer; os engenheiros preferiram não fazer.</span></span></li>
+          <li><span>Uma <strong>superclasse já implementou</strong> <code>equals</code> e o comportamento é apropriado para essa classe.<span class="note"><span class="tag">Exemplo</span><code>Set</code> herda o <code>equals</code> de <code>AbstractSet</code>, e <code>List</code> herda de <code>AbstractList</code>.</span></span></li>
+          <li><span>A classe é <strong>privada ou package-private</strong>.<span class="note"><span class="tag">Exemplo</span>quando você tem absoluta certeza de que <code>equals</code> não vai ser chamado.</span></span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 4 — MinhaThread -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Exemplo — item10/MinhaThread.java</div>
+        <h2>Instância inerentemente exclusiva</h2>
+        <div class="exhibit">
+          <div class="exhibit-label"><span>MinhaThread.java</span><span>extends Thread</span></div>
+          <pre><code class="language-java">package dev.matheuscruz.item10;
+
+public class MinhaThread extends Thread {}</code></pre>
+        </div>
+        <p class="lede">Cada <code>Thread</code> representa uma execução real e única do sistema — não existe "igualdade lógica" entre threads. Sobrescrever <code>equals</code> aqui pode apagar essa identidade ativa e quebrar qualquer coleção ou lógica que dependa dela.</p>
+      </div>
+    </section>
+
+    <!-- 5 — TRANSIÇÃO -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Mas…</div>
+        <h2>Mais cedo ou mais tarde, vamos precisar implementá-lo</h2>
+        <p class="lede">Na prática, é raro nunca sobrescrever <code>equals</code>. Alguma classe do seu domínio vai exigir igualdade lógica. A pergunta certa não é <em>se</em> — é <strong>quando</strong>.</p>
+      </div>
+    </section>
+
+    <!-- 6 — OBJETO DE VALOR -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Quando implementar</div>
+        <h2>Quando o valor importa mais que a identidade</h2>
+        <p class="lede">Em <strong>DDD</strong> (Domain-Driven Design), um <strong>Value Object</strong> é definido pelos seus atributos, não por uma identidade própria — dois objetos de valor são iguais quando todos os seus atributos são iguais. Costumam ser imutáveis e substituíveis entre si.</p>
+        <div class="vo-grid">
+          <div class="vo-card"><div class="k">Dinheiro</div><div class="v">R$ 10,00 — igual a qualquer outro R$ 10,00</div></div>
+          <div class="vo-card"><div class="k">CPF / Email</div><div class="v">o valor é a identidade do objeto</div></div>
+          <div class="vo-card"><div class="k">Coordenada</div><div class="v"><code>Point(x, y)</code> — dois pontos, mesmo valor</div></div>
+        </div>
+        <p class="lede" style="margin-top:1em">É exatamente aqui que <code>equals</code> se torna necessário: comparar por <strong>valor</strong>, não por referência.</p>
+      </div>
+    </section>
+
+    <!-- 7 — COMO IMPLEMENTAR (divisor) -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Como implementar corretamente?</div>
+        <h2>equals deve ser…</h2>
+        <ol class="clauses">
+          <li><span class="head">Reflexivo</span></li>
+          <li><span class="head">Simétrico</span></li>
+          <li><span class="head">Transitivo</span></li>
+          <li><span class="head">Consistente</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 8 — REFLEXIVIDADE -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">1 · Reflexividade</div>
+        <h2>x.equals(x) precisa ser true</h2>
+        <p class="lede">Sendo <code>x</code> não nulo, <code>x.equals(x)</code> deve retornar <code>true</code>.</p>
+      </div>
+    </section>
+
+    <!-- 9 — SIMETRIA -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">2 · Simetria</div>
+        <h2>x.equals(y) precisa concordar com y.equals(x)</h2>
+        <p class="lede">Sendo <code>x</code> e <code>y</code> não nulos, <code>x.equals(y)</code> e <code>y.equals(x)</code> devem retornar ambos <code>true</code>.</p>
+      </div>
+    </section>
+
+    <!-- 10 — TRANSITIVIDADE (teaser) -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">3 · Transitividade</div>
+        <h2>x=y e y=z devem implicar x=z</h2>
+        <p class="lede">Sendo <code>x</code>, <code>y</code> e <code>z</code> não nulos: se <code>x.equals(y)</code> e <code>y.equals(z)</code>, então <code>x.equals(z)</code> também deve ser <code>true</code>.</p>
+        <p class="lede"><strong>É a cláusula mais complexa de explicar</strong> — voltamos nela em detalhe daqui a pouco.</p>
+      </div>
+    </section>
+
+    <!-- 11 — CONSISTÊNCIA (handoff) -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">4 · Consistência</div>
+        <h2>Consistência</h2>
+        <div class="handoff">
+          <span class="tag">Cláusula delegada</span>
+          <p>Essa fica por conta do <span class="who">@omatheusmesmo</span>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 — DEMO -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Pausa para demonstração</div>
+        <h2>Mão na massa</h2>
+        <p class="lede">Vamos abrir o código e ver, na prática, uma violação e a implementação correta — usando as classes de teste do pacote <code>item10</code>.</p>
+        <div class="demo-box"><span class="path">src/test/java/dev/matheuscruz/item10/</span>
+├── reflexidade/<span class="file">PlayerTest.java</span>
+├── simetria/<span class="file">CaseInsensitiveStringTest.java</span>
+├── simetria/<span class="file">CaseInsensitiveStringViolationTest.java</span>
+└── transitividade/<span class="file">PointTest.java</span>, <span class="file">ColorPointTest.java</span></div>
+      </div>
+    </section>
+
+    <!-- 13 — DIVISOR TRANSITIVIDADE -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">De volta à cláusula 3</div>
+        <h2>É aqui que ela quebra</h2>
+        <p class="lede">A violação da transitividade aparece quando temos <strong>herança</strong>: uma superclasse já tem <code>equals</code>, e uma subclasse adiciona um componente de valor tentando manter o contrato.</p>
+      </div>
+    </section>
+
+    <!-- 14 — Point.equals -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">item10/transitividade/Point.java</div>
+        <h2>O ponto de partida</h2>
+        <div class="exhibit">
+          <span class="stamp good">Obedece</span>
+          <div class="exhibit-label"><span>Point.java</span></div>
+          <pre><code class="language-java">@Override
+public boolean equals(Object obj) {
+    if (!(obj instanceof Point point)) return false;
+    return point.x == this.x && point.y == this.y;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15 — ColorPoint problema -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">item10/transitividade/ColorPoint.java</div>
+        <h2>ColorPoint extends Point — e agora?</h2>
+        <p class="lede"><code>ColorPoint</code> adiciona um componente de valor (<code>color</code>) a uma classe que já é instanciável e já tem <code>equals</code>. O arquivo guarda duas tentativas comentadas de resolver isso.</p>
+      </div>
+    </section>
+
+    <!-- 16 — OS TRÊS PROBLEMAS -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Consequências</div>
+        <h2>Temos diversos problemas</h2>
+        <ul class="problems">
+          <li><span><strong>Violação da simetria</strong> — o resultado muda dependendo de quem compara com quem.</span></li>
+          <li><span><strong>Violação da transitividade</strong> — dois pares "iguais" não garantem que o terceiro também seja.</span></li>
+          <li><span><strong>Violação do Princípio de Substituição de Liskov</strong> — o comportamento de <code>equals</code> muda conforme o tipo concreto.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 17 — DUAS TENTATIVAS -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Duas tentativas</div>
+        <h2>E nenhuma resolve os três problemas ao mesmo tempo</h2>
+        <div class="compare">
+          <div>
+            <h4>Opção A — só compara com ColorPoint</h4>
+            <div class="exhibit">
+              <span class="stamp bad">Quebra simetria</span>
+              <pre><code class="language-java">if (!(obj instanceof ColorPoint c))
+    return false;
+return super.equals(obj)
+    && c.color == this.color;</code></pre>
+            </div>
+          </div>
+          <div>
+            <h4>Opção B — ignora a cor ao comparar com Point</h4>
+            <div class="exhibit">
+              <span class="stamp bad">Quebra transitividade e Liskov</span>
+              <pre><code class="language-java">if (!(obj instanceof Point p)) return false;
+if (!(obj instanceof ColorPoint))
+    return obj.equals(this);
+return super.equals(obj)
+    && ((ColorPoint) obj).color == color;</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 18 — LISKOV -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Princípio de Substituição de Liskov</div>
+        <h2>Em poucas palavras</h2>
+        <p class="lede">Se <code>S</code> é subtipo de <code>T</code>, qualquer código escrito para <code>T</code> deve continuar funcionando corretamente ao receber um <code>S</code> no lugar — sem checagens especiais, sem surpresas.</p>
+        <hr class="rule">
+        <p class="lede">Quando o <code>equals</code> de <code>ColorPoint</code> se comporta de forma diferente dependendo de quem está do outro lado da comparação, código que trata todo <code>Point</code> da mesma forma passa a se comportar de modo inconsistente ao receber um <code>ColorPoint</code>. A substituição deixa de ser segura.</p>
+      </div>
+    </section>
+
+    <!-- 19 — CONTRAEXEMPLO -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">A opção B, posta à prova</div>
+        <h2>O contraexemplo clássico</h2>
+        <div class="trace">
+          <div>p1 = <b>new ColorPoint(1, 2, RED)</b></div>
+          <div>p2 = <b>new Point(1, 2)</b></div>
+          <div>p3 = <b>new ColorPoint(1, 2, BLUE)</b></div>
+          <div class="ok">p1.equals(p2)  →  true   <span class="cite">// p2 não é ColorPoint, cor ignorada</span></div>
+          <div class="ok">p2.equals(p3)  →  true   <span class="cite">// mesma razão</span></div>
+          <div class="no">p1.equals(p3)  →  false  <span class="cite">// ambos são ColorPoint — cores diferem</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 20 — OPÇÃO C: getClass() -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Uma terceira tentativa — ColorPoint.java</div>
+        <h2>Opção C — getClass() em vez de instanceof</h2>
+        <div class="exhibit">
+          <span class="stamp bad">Quebra Liskov</span>
+          <div class="exhibit-label"><span>equals</span><span>só compara dentro do mesmo tipo exato</span></div>
+          <pre><code class="language-java">if (obj == null || obj.getClass() != getClass())
+    return false;
+Point p = (Point) obj;
+return p.x == x && p.y == y;</code></pre>
+        </div>
+        <div class="trace">
+          <div>p1 = <b>new ColorPoint(1, 2, RED)</b></div>
+          <div>p2 = <b>new Point(1, 2)</b></div>
+          <div class="ok">p1.equals(p2)  →  false  <span class="cite">// getClass() difere</span></div>
+          <div class="ok">p2.equals(p1)  →  false  <span class="cite">// simétrico, ao menos</span></div>
+        </div>
+        <p class="lede">Simetria e transitividade voltam a valer — mas ao custo de <code>ColorPoint</code> nunca poder ser igual a um <code>Point</code>, mesmo quando isso seria o comportamento esperado. O próprio comentário do código já entrega o veredito.</p>
+      </div>
+    </section>
+
+    <!-- 21 — COMO RESOLVER -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Como resolver?</div>
+        <h2>Não existe forma satisfatória — mas há uma alternativa</h2>
+        <p class="lede">Composição em vez de herança: <code>ColorPoint</code> não é um <code>Point</code> — ele <strong>tem</strong> um <code>Point</code>.</p>
+        <div class="exhibit">
+          <span class="stamp good">Obedece</span>
+          <div class="exhibit-label"><span>composição, não herança</span></div>
+          <pre><code class="language-java">public class ColorPoint {
+    private final Point point;
+    private final Color color;
+
+    public ColorPoint(int x, int y, Color color) {
+        this.point = new Point(x, y);
+        this.color = Objects.requireNonNull(color);
+    }
+
+    public Point asPoint() { return point; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof ColorPoint cp)) return false;
+        return cp.point.equals(point) && cp.color.equals(color);
+    }
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 22 — RECAP -->
+    <section>
+      <div class="page">
+        <div class="eyebrow">Recapitulando</div>
+        <h2>O contrato, em uma tela</h2>
+        <table class="recap">
+          <thead><tr><th>§</th><th>Cláusula</th><th>Exemplo do repositório</th></tr></thead>
+          <tbody>
+            <tr><td class="n">1</td><td>Reflexiva</td><td><code>reflexidade/PlayerTest</code></td></tr>
+            <tr><td class="n">2</td><td>Simétrica</td><td><code>CaseInsensitiveString</code> vs <code>Violation</code></td></tr>
+            <tr><td class="n">3</td><td>Transitiva</td><td><code>Point</code> vs <code>ColorPoint</code> — cuidado com Liskov</td></tr>
+            <tr><td class="n">4</td><td>Consistente</td><td><span class="badge good">@omatheusmesmo</span></td></tr>
+          </tbody>
+        </table>
+        <p class="lede" style="margin-top:1em">E, antes de tudo isso: <span class="badge bad">MinhaThread</span> — pergunte-se primeiro se você deveria sobrescrever <code>equals</code>.</p>
+      </div>
+    </section>
+
+    <!-- 23 — ENCERRAMENTO -->
+    <section>
+      <div class="page closing">
+        <div class="eyebrow">Fim do item 10</div>
+        <h1>Perguntas?</h1>
+        <p class="lede">Código completo dos exemplos em <code>src/main/java/dev/matheuscruz/item10</code>, com os testes correspondentes em <code>src/test</code>.</p>
+        <div class="next">Próxima sessão · <b>Item 11 — Sobrescreva hashCode sempre que sobrescrever equals</b></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="./vendor/reveal.js"></script>
+<script>
+  // Realce de sintaxe Java sob medida — evita depender de highlight.js
+  // só para os poucos tokens que aparecem nestes slides.
+  (function highlightJava(){
+    var KEYWORDS = ("package import public private protected class interface extends implements " +
+      "static final void return new if else for while do switch case break continue this super " +
+      "true false null instanceof throws throw try catch finally enum abstract synchronized " +
+      "volatile transient default int long short byte char boolean double float var record").split(" ");
+    var kwPattern = "\\b(" + KEYWORDS.join("|") + ")\\b";
+    var tokenRe = new RegExp(
+      "(//.*)|" +                          // 1 comment
+      "(\"(?:\\\\.|[^\"\\\\])*\")|" +       // 2 string
+      "(@[A-Za-z_]\\w*)|" +                 // 3 annotation
+      kwPattern + "|" +                     // 4 keyword
+      "(\\b[A-Z]\\w*\\b)|" +                // 5 type
+      "(\\b\\d+\\b)",                       // 6 number
+      "g"
+    );
+
+    function escapeHtml(s){
+      return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    document.querySelectorAll("code.language-java").forEach(function(block){
+      var src = block.textContent;
+      var out = "";
+      var last = 0;
+      src.replace(tokenRe, function(match, com, str, anno, kw, type, num, offset){
+        out += escapeHtml(src.slice(last, offset));
+        if (com !== undefined) out += '<span class="tok-com">' + escapeHtml(com) + '</span>';
+        else if (str !== undefined) out += '<span class="tok-str">' + escapeHtml(str) + '</span>';
+        else if (anno !== undefined) out += '<span class="tok-anno">' + escapeHtml(anno) + '</span>';
+        else if (kw !== undefined) out += '<span class="tok-kw">' + escapeHtml(kw) + '</span>';
+        else if (type !== undefined) out += '<span class="tok-type">' + escapeHtml(type) + '</span>';
+        else if (num !== undefined) out += '<span class="tok-num">' + escapeHtml(num) + '</span>';
+        last = offset + match.length;
+        return match;
+      });
+      out += escapeHtml(src.slice(last));
+      block.innerHTML = out;
+    });
+  })();
+
+  Reveal.initialize({
+    hash: true,
+    center: false,
+    controls: true,
+    progress: true,
+    slideNumber: "c/t",
+    transition: "slide",
+    transitionSpeed: "fast",
+    width: 1180,
+    height: 800,
+    margin: 0.08,
+    disableLayout: false
+  });
+</script>
+</body>
+</html>
